@@ -2,38 +2,26 @@
 
 Personlig React-webapp för Forerunner 265 – översikt, sömn, återhämtning och AI-rekommendationer.
 
-## Deploya till Vercel (rekommenderat)
+## Garmin-koppling (v0.2)
 
-### Alternativ 1 – Enklast (via GitHub)
+1. Öppna appen på Vercel
+2. Gå till fliken **Mer**
+3. Logga in med ditt Garmin-konto (e-post + lösenord)
+4. Inloggningen sparas lokalt – du behöver bara göra det en gång
+5. Tryck **Uppdatera** eller öppna appen igen för att hämta färsk data
 
-1. Skapa ett nytt repo på GitHub och ladda upp hela `garmin-dashboard`-mappen.
-2. Gå till [vercel.com](https://vercel.com) och logga in (med GitHub).
-3. Klicka **Add New Project** → importera ditt repo.
-4. Vercel upptäcker Vite automatiskt. Klicka **Deploy**.
-5. Klart! Du får en URL typ `https://garmin-dashboard-xxx.vercel.app`
+**Obs:** Använder inofficiell Garmin Connect-metod (`python-garminconnect`). Kan gå sönder om Garmin ändrar autentisering.
 
-### Alternativ 2 – Vercel CLI (om du kan köra kommandon någonstans)
+## Vercel-inställningar
 
-```bash
-npm i -g vercel
-cd garmin-dashboard
-vercel
-```
+- **Root Directory**: `garmin-dashboard`
+- **Framework**: Vite
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- Python-beroenden installeras automatiskt via `requirements.txt`
 
-Följ stegen (logga in, etc.).
+## Teknik
 
-## Lokalt (om du får möjlighet)
-
-```bash
-npm install
-npm run dev
-```
-
-## Vad som finns i MVP
-
-- **Idag**: "Hur mår jag idag?" + Body Battery + AI-rekommendationer
-- **Sömn**: Sömnpoäng + stadier + återhämtning
-- **Aktivitet**: Senaste pass (mock)
-- **Mer**: Inställningar
-
-Nästa steg: koppla inofficiell Garmin-login + riktig data.
+- React 19 + TypeScript + Vite
+- Tailwind (CDN)
+- Vercel Serverless (Python) för Garmin-API
