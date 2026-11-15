@@ -66,21 +66,38 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('hud');
   const [open, setOpen] = useState<number | null>(null);
   const [booted, setBooted] = useState(false);
+  const [stale, setStale] = useState(false);
 
+  const hasFeed = useRef(false);
   const refresh = useCallback(async () => {
     if (!key) return;
     setLoading(true);
     try {
-      setFeed(await fetchFeed(key));
-      setError(null);
-    } catch (e) {
-      if (e instanceof Unauthorized) {
-        clearKey();
-        setKey(null);
-        setFeed(null);
-        setError('Åtkomstnyckeln godkändes inte.');
-      } else {
-        setError('Ingen kontakt med databasen just nu. Försöker igen.');
+      // iOS avbryter ofta första anropet när appen vaknar ur bakgrunden: försök igen tyst.
+      for (let attempt = 0; ; attempt++) {
+        try {
+          setFeed(await fetchFeed(key));
+          hasFeed.current = true;
+          setError(null);
+          setStale(false);
+          return;
+        } catch (e) {
+          if (e instanceof Unauthorized) {
+            clearKey();
+            setKey(null);
+            setFeed(null);
+            hasFeed.current = false;
+            setError('Åtkomstnyckeln godkändes inte.');
+            return;
+          }
+          if (attempt >= 2) {
+            // Finns data redan på skärmen: visa bara en diskret markering.
+            if (hasFeed.current) setStale(true);
+            else setError('Ingen kontakt med databasen just nu. Försöker igen.');
+            return;
+          }
+          await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+        }
       }
     } finally {
       setLoading(false);
@@ -89,7 +106,7 @@ export default function App() {
 
   useEffect(() => {
     refresh();
-    const t = setInterval(() => document.visibilityState === 'visible' && refresh(), 60000);
+    const t = setInterval(() => document.visibilityState === 'visible' && refresh(), hasFeed.current ? 60000 : 8000);
     const vis = () => document.visibilityState === 'visible' && refresh();
     document.addEventListener('visibilitychange', vis);
     return () => {
@@ -136,7 +153,7 @@ export default function App() {
         </div>
         <Clock />
         <button className="ghost" onClick={refresh} disabled={loading} aria-label="Uppdatera">
-          {loading ? 'SYNK…' : 'SYNK'}
+          {loading ? 'SYNK…' : stale ? 'OFFLINE' : 'SYNK'}
         </button>
       </header>
 
