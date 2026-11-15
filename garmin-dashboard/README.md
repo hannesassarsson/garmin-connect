@@ -1,27 +1,23 @@
-# Garmin Dashboard
+# Coach OS
 
-Personlig React-webapp för Forerunner 265 – översikt, sömn, återhämtning och AI-rekommendationer.
+Personlig tränings-HUD mot IRONMAN 70.3 Jönköping 2027. Visar beredskap, sömn, HRV,
+vilopuls, Body Battery, veckans belastning, alla pass och coachens rapporter
+(passanalyser, morgon- och kvällskoll, planer).
 
-## Garmin-koppling (v0.2)
+## Så hänger det ihop
 
-1. Öppna appen på Vercel
-2. Gå till fliken **Mer**
-3. Logga in med ditt Garmin-konto (e-post + lösenord)
-4. Inloggningen sparas lokalt – du behöver bara göra det en gång
-5. Tryck **Uppdatera** eller öppna appen igen för att hämta färsk data
+- Garmin-datan synkas till Supabase av `garmin-bridge`.
+- Appen läser allt genom databasfunktionen `coach_feed(p_token)`. Tabellerna är låsta
+  med RLS. Utan giltig åtkomstnyckel returneras ingenting.
+- Nyckeln kommer första gången via länken (`/#k=...`) och sparas lokalt på enheten.
+- Rapporter är rader i `public.coach_messages` (`kind`, `title`, `body_md` i Markdown,
+  valfritt `activity_id` och `metrics` som JSON). En ny rad syns i appen inom en minut.
 
-**Obs:** Använder inofficiell Garmin Connect-metod (`python-garminconnect`). Kan gå sönder om Garmin ändrar autentisering.
+## Utveckling
 
-## Vercel-inställningar
+```
+npm install
+npm run dev
+```
 
-- **Root Directory**: `garmin-dashboard`
-- **Framework**: Vite
-- **Build Command**: `npm run build`
-- **Output Directory**: `dist`
-- Python-beroenden installeras automatiskt via `requirements.txt`
-
-## Teknik
-
-- React 19 + TypeScript + Vite
-- Tailwind (CDN)
-- Vercel Serverless (Python) för Garmin-API
+Vercel: Root Directory `garmin-dashboard`, framework Vite.
