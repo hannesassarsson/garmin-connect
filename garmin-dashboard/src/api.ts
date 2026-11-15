@@ -62,11 +62,69 @@ export interface Activity {
   hr_zone5_s: number | null;
 }
 
+export interface Phase {
+  name: string;
+  start: string;
+  end: string;
+  hours: string;
+  focus: string;
+  goals: string[];
+}
+
+export interface Season {
+  race: { name: string; date: string; swim_km: number; bike_km: number; run_km: number };
+  ftp_w: number;
+  weight_kg: number;
+  half_marathon?: { date: string; seconds: number };
+  weakest?: string;
+  strongest?: string;
+  phases: Phase[];
+  easy_weeks: string[];
+  tests: { week: string; what: string }[];
+  zones?: Record<string, string>;
+}
+
 export interface Feed {
   generated_at: string;
+  settings: { season?: Season };
+  work: { ics: string; fetched_at: string } | null;
   messages: Message[];
   health: Health[];
   activities: Activity[];
+}
+
+export interface Lap {
+  i: number;
+  distance: number | null;
+  duration: number | null;
+  hr: number | null;
+  max_hr: number | null;
+  power: number | null;
+  speed: number | null;
+  swolf: number | null;
+  cadence: number | null;
+  type: string | null;
+}
+
+export interface Similar {
+  activity_id: number;
+  start_local: string;
+  name: string | null;
+  distance_km: number | null;
+  duration_min: number | null;
+  pace_min_per_km: number | null;
+  avg_hr: number | null;
+  avg_power: number | null;
+  norm_power: number | null;
+  training_load: number | null;
+  swim_pace_min_per_100m: number | null;
+}
+
+export interface Detail {
+  activity: Activity & Record<string, number | string | null>;
+  laps: Lap[];
+  power: { zones: (number | null)[]; best: Record<string, number | null> } | null;
+  similar: Similar[];
 }
 
 export class Unauthorized extends Error {}
@@ -126,3 +184,20 @@ async function rpc<T>(fn: string, body: Record<string, unknown>): Promise<T> {
 export const fetchFeed = (key: string) => rpc<Feed>('coach_feed', { p_token: key });
 export const markRead = (key: string, id: number | null) =>
   rpc<null>('coach_mark_read', { p_token: key, p_id: id });
+export const fetchActivity = (key: string, id: number) =>
+  rpc<Detail | null>('coach_activity', { p_token: key, p_id: id });
+export const pushSubscribe = (key: string, sub: unknown) =>
+  rpc<null>('coach_push_subscribe', { p_token: key, p_sub: sub });
+export const pushUnsubscribe = (key: string, endpoint: string) =>
+  rpc<null>('coach_push_unsubscribe', { p_token: key, p_endpoint: endpoint });
+
+const TRAINING_ICS =
+  'https://raw.githubusercontent.com/hannesassarsson/-training-calendar/main/training.ics';
+
+export async function fetchTrainingIcs(): Promise<string> {
+  const res = await fetch(`${TRAINING_ICS}?t=${Math.floor(Date.now() / 300000)}`);
+  if (!res.ok) throw new Error(`Träningskalendern svarade ${res.status}`);
+  return res.text();
+}
+
+export const CLAUDE_PROJECT_URL = 'https://claude.ai/project/01a12663-ca8a-7478-a25b-a22621487032';

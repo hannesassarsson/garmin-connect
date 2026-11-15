@@ -4,12 +4,13 @@ export const RACE = new Date(2027, 6, 11);
 
 export type Group = 'sim' | 'cykel' | 'lop' | 'styrka' | 'ovrigt';
 
-export const GROUPS: Record<Group, { label: string; color: string }> = {
-  sim: { label: 'Sim', color: 'var(--sim)' },
-  cykel: { label: 'Cykel', color: 'var(--cykel)' },
-  lop: { label: 'Löp', color: 'var(--lop)' },
-  styrka: { label: 'Styrka', color: 'var(--styrka)' },
-  ovrigt: { label: 'Övrigt', color: 'var(--dim)' },
+// color = ljus HUD-färg för text och kanter, chart = validerad diagramfärg (färgblindsäker mot mörk yta).
+export const GROUPS: Record<Group, { label: string; color: string; chart: string }> = {
+  sim: { label: 'Sim', color: 'var(--sim)', chart: 'var(--c-sim)' },
+  cykel: { label: 'Cykel', color: 'var(--cykel)', chart: 'var(--c-cykel)' },
+  lop: { label: 'Löp', color: 'var(--lop)', chart: 'var(--c-lop)' },
+  styrka: { label: 'Styrka', color: 'var(--styrka)', chart: 'var(--c-styrka)' },
+  ovrigt: { label: 'Övrigt', color: 'var(--dim)', chart: 'var(--dim)' },
 };
 
 export function groupOf(sport: string): Group {
@@ -88,6 +89,7 @@ export function dayLabel(day: string): string {
   const diff = Math.round((startOfDay(new Date()).getTime() - d.getTime()) / 86400000);
   if (diff === 0) return 'i dag';
   if (diff === 1) return 'i går';
+  if (diff === -1) return 'i morgon';
   return fmtDay(d);
 }
 
@@ -116,3 +118,43 @@ export function greeting(): string {
   if (h < 18) return 'God dag';
   return 'God kväll';
 }
+
+export function isoWeek(d: Date): { year: number; week: number; key: string } {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const year = t.getUTCFullYear();
+  const week = Math.ceil(((t.getTime() - Date.UTC(year, 0, 1)) / 86400000 + 1) / 7);
+  return { year, week, key: `${year}-W${String(week).padStart(2, '0')}` };
+}
+
+export function mondayOfIsoWeek(key: string): Date {
+  const [y, w] = key.split('-W').map(Number);
+  const jan4 = new Date(y, 0, 4);
+  const mon = mondayOf(jan4);
+  mon.setDate(mon.getDate() + (w - 1) * 7);
+  return mon;
+}
+
+export function fmtHms(sec: number): string {
+  const s = Math.round(sec);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}` : `${m}:${String(s % 60).padStart(2, '0')}`;
+}
+
+export const fmtHm = (sec: number) => {
+  const m = Math.round(sec / 60);
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
+};
+
+export const fmtDate = (d: Date) => d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+
+export function median(xs: number[]): number | null {
+  if (!xs.length) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+export const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
