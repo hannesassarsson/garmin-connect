@@ -106,7 +106,7 @@ export default function App() {
 
   useEffect(() => {
     refresh();
-    const t = setInterval(() => document.visibilityState === 'visible' && refresh(), hasFeed.current ? 60000 : 8000);
+    const t = setInterval(() => document.visibilityState === 'visible' && refresh(), 20000);
     const vis = () => document.visibilityState === 'visible' && refresh();
     document.addEventListener('visibilitychange', vis);
     return () => {
