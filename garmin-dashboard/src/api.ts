@@ -51,6 +51,7 @@ export interface Activity {
   max_hr: number | null;
   avg_power: number | null;
   norm_power: number | null;
+  max_20min_power?: number | null;
   training_load: number | null;
   aerobic_te: number | null;
   anaerobic_te: number | null;
@@ -84,9 +85,34 @@ export interface Season {
   zones?: Record<string, string>;
 }
 
+export interface RecordRow {
+  activity_id: number;
+  start_local: string;
+  distance_km?: number | null;
+  duration_min?: number | null;
+  pace_min_per_km?: number | null;
+  max_20min_power?: number | null;
+  swim_pace_min_per_100m?: number | null;
+  bucket?: number;
+}
+
+export interface Records {
+  run: RecordRow[] | null;
+  run_longest: RecordRow | null;
+  bike_20min: RecordRow | null;
+  bike_longest: RecordRow | null;
+  swim_longest: RecordRow | null;
+  swim_fastest: RecordRow | null;
+}
+
+// Rå Garmin-data (max_metrics, training_status, endurance_score, race_predictions); formen kan variera.
+export type MetricsDay = { day: string; m: Record<string, unknown> };
+
 export interface Feed {
   generated_at: string;
   settings: { season?: Season };
+  metrics?: MetricsDay[];
+  records?: Records;
   work: { ics: string; fetched_at: string } | null;
   messages: Message[];
   health: Health[];

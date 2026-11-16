@@ -63,6 +63,13 @@ export function eventGroup(summary: string): Group {
 
 export const isDone = (e: Ev) => /GENOMFÖRT/i.test(e.description);
 
+/** Utepass där vädret spelar roll: löpning eller cykel som inte är Zwift/löpband. */
+export function outdoorSport(e: Ev): 'lop' | 'cykel' | null {
+  if (/zwift|löpband|trainer|inomhus|rulle/i.test(e.summary)) return null;
+  const g = eventGroup(e.summary);
+  return g === 'lop' || g === 'cykel' ? g : null;
+}
+
 export interface Shift {
   start: Date;
   end: Date;

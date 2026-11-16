@@ -10,7 +10,9 @@ import {
   type Message,
   type Season,
 } from './api';
-import { eventGroup, isDone, type Ev, type PlanDay } from './ics';
+import { eventGroup, isDone, outdoorSport, type Ev, type PlanDay } from './ics';
+import { FitnessPanel, RecordsPanel, WeatherLine, fitnessSeries } from './fitness';
+import { during, warning, type Hour } from './weather';
 import { disablePush, enablePush, pushState, type PushState } from './push';
 import { Card, Core, HRV, KIND, LEVEL, LineChart, Sheet, Spark, SpeakButton, Tile, Typed } from './ui';
 import {
@@ -47,6 +49,15 @@ export interface PlanData {
   next: Ev | null;
   trainingError: string | null;
   workFetched: string | null;
+  weather: Hour[] | null;
+}
+
+function EvWeather({ e, hours }: { e: Ev; hours: Hour[] | null }) {
+  const sport = outdoorSport(e);
+  if (!sport || !hours) return null;
+  const w = during(hours, e.start, e.end);
+  if (!w) return null;
+  return <WeatherLine w={w} warn={warning(w, sport)} />;
 }
 
 /* ───────────────────────── Läge ───────────────────────── */
@@ -133,6 +144,7 @@ export function Hud(props: {
               </span>
             </div>
             <h4>{next.summary}</h4>
+            <EvWeather e={next} hours={plan.weather} />
             <p>{clip(next.description, 150)}</p>
             <p className="note">Samma dag: {shiftText(nextDay)}</p>
           </div>
@@ -187,6 +199,8 @@ export function Hud(props: {
           <Spark values={series('body_battery_high')} color="var(--cykel)" />
         </Tile>
       </div>
+
+      <FitnessPanel series={fitnessSeries(feed.metrics)} />
 
       <section className="panel">
         <h2>
@@ -332,6 +346,11 @@ export function PlanView({ plan }: { plan: PlanData }) {
                       {e.summary}
                       {done && <em> · Genomfört</em>}
                     </span>
+                    {outdoorSport(e) && plan.weather && (
+                      <span className="w">
+                        <EvWeather e={e} hours={plan.weather} />
+                      </span>
+                    )}
                     {open === e.uid && <span className="d">{e.description || 'Ingen beskrivning.'}</span>}
                   </button>
                 );
@@ -341,6 +360,7 @@ export function PlanView({ plan }: { plan: PlanData }) {
         })}
       </div>
       {plan.workFetched && <p className="note">Arbetsschemat hämtat {fmtWhen(new Date(plan.workFetched))}. Tryck på ett pass för hela upplägget.</p>}
+      <p className="note">Väder för Ystad vid utepass: Open-Meteo.com (CC BY 4.0). Prognosen sträcker sig 14 dagar och blir säkrare ju närmare passet är.</p>
     </>
   );
 }
@@ -959,6 +979,7 @@ export function Goal({ feed }: { feed: Feed }) {
   const hm = season.half_marathon?.seconds;
   const run = hm ? [hm * 1.05, hm * 1.12] : null;
   const trans = [8 * 60, 10 * 60];
+  const garminHm = fitnessSeries(feed.metrics).find((f) => f.race.hm)?.race.hm ?? null;
   const total = swim && run ? [swim[0] + bike[0] + run[0] + trans[0], swim[1] + bike[1] + run[1] + trans[1]] : null;
   const rng = (r: number[] | null) => (r ? `${fmtHm(r[0])} – ${fmtHm(r[1])}` : 'saknar data');
 
@@ -972,6 +993,8 @@ export function Goal({ feed }: { feed: Feed }) {
           {num(season.race.swim_km, 1)} km sim · {num(season.race.bike_km)} km cykel · {num(season.race.run_km, 1)} km löp
         </p>
       </section>
+
+      <RecordsPanel feed={feed} />
 
       <section className="panel">
         <h2>
@@ -1069,7 +1092,8 @@ export function Goal({ feed }: { feed: Feed }) {
           Det här är en räknemodell med dagens form, inget mål. Sim: ditt mediantempo i bassäng senaste 6 veckorna
           {swimPace ? ` (${fmtPace(swimPace)}/100 m)` : ''}, upp till 10 % långsammare i öppet vatten. Cykel: 68–78 % av FTP {season.ftp_w} W,
           räknat på plan väg med 8 % avdrag för backar och kurvor. Banans riktiga profil är inte inräknad. Löp: din halvmara
-          {hm ? ` (${fmtHms(hm)})` : ''} plus 5–12 % för att du springer efter cyklingen. Tävlingsmålet sätts efter testerna i mars.
+          {hm ? ` (${fmtHms(hm)})` : ''} plus 5–12 % för att du springer efter cyklingen.
+          {garminHm ? ` Garmins egen prognos för en fristående halvmara är ${fmtHms(garminHm)}.` : ''} Tävlingsmålet sätts efter testerna i mars.
         </p>
       </section>
     </>

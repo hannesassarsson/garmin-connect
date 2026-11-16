@@ -13,6 +13,7 @@ import {
 } from './api';
 import { buildPlan, isDone, parseIcs, type Ev } from './ics';
 import { registerSw } from './push';
+import { fetchWeather, type Hour } from './weather';
 import { Reader } from './ui';
 import { startOfDay } from './util';
 import { DetailSheet, Goal, Hud, PlanView, Reports, Sessions, Trends, type PlanData } from './views';
@@ -39,6 +40,7 @@ export default function App() {
   const [booted, setBooted] = useState(false);
   const [training, setTraining] = useState<Ev[] | null>(null);
   const [trainingError, setTrainingError] = useState<string | null>(null);
+  const [weather, setWeather] = useState<Hour[] | null>(null);
   const pending = useRef<number | null>(Number(new URLSearchParams(window.location.search).get('m')) || null);
   const hasFeed = useRef(false);
 
@@ -52,6 +54,7 @@ export default function App() {
       },
       () => setTrainingError('ingen kontakt med GitHub'),
     );
+    fetchWeather().then(setWeather, () => undefined);
     try {
       // iOS avbryter ofta första anropet när appen vaknar ur bakgrunden: försök igen tyst.
       for (let attempt = 0; ; attempt++) {
@@ -142,8 +145,9 @@ export default function App() {
       next: (training ?? []).find((e) => e.end.getTime() > now && !isDone(e)) ?? null,
       trainingError: training ? null : trainingError,
       workFetched: feed?.work?.fetched_at ?? null,
+      weather,
     };
-  }, [training, trainingError, work, feed?.work?.fetched_at]);
+  }, [training, trainingError, work, feed?.work?.fetched_at, weather]);
 
   if (!key) return <Lock error={error} onKey={(k) => (saveKey(k), setError(null), setKey(k))} />;
 
